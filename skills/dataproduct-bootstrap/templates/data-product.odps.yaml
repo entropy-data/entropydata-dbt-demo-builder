@@ -18,6 +18,10 @@ outputPorts:
     version: 1.0.0
     type: trino
     contractId: "{{CONTRACT_ID}}"
+    customProperties:
+      # Display name of the port in Entropy Data (without it, pages show "Deleted Output Port")
+      - property: displayName
+        value: "{{DATA_PRODUCT_NAME}}"
 customProperties:
   - property: "dataProductBuilder"
     value: "https://github.com/entropy-data/entropydata-dbt-demo-builder"
