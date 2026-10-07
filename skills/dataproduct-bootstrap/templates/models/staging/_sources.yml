@@ -1,0 +1,15 @@
+version: 2
+
+# Input ports as dbt sources: one source per inputPorts entry in the ODPS.
+# The dataproduct-implement skill fills in the tables and columns from the
+# upstream data contract ({{INPUT_CONTRACT_ID}}).
+sources:
+  - name: {{INPUT_SOURCE_NAME}}
+    database: {{INPUT_CATALOG}}
+    schema: {{INPUT_SCHEMA}}
+    meta:
+      data_contract:
+        id: {{INPUT_CONTRACT_ID}}
+    # tables:
+    #   - name: <table>
+    #     description: <from contract>

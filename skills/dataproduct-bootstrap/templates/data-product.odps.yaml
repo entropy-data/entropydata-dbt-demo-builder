@@ -1,0 +1,26 @@
+apiVersion: v1.0.0
+kind: DataProduct
+id: "{{DATA_PRODUCT_ID}}"
+name: "{{DATA_PRODUCT_NAME}}"
+version: 1.0.0
+status: draft
+description:
+  purpose: "{{PURPOSE}}"
+team:
+  name: "{{TEAM_NAME}}"
+inputPorts:
+  - name: "{{INPUT_DATA_PRODUCT_ID}}"
+    version: 1.0.0
+    contractId: "{{INPUT_CONTRACT_ID}}"
+outputPorts:
+  - name: "{{OUTPUT_PORT_NAME}}"
+    description: "Tables in \"hive-iceberg\".{{SCHEMA}}, built by dbt."
+    version: 1.0.0
+    type: trino
+    contractId: "{{CONTRACT_ID}}"
+customProperties:
+  - property: "dataProductBuilder"
+    value: "https://github.com/entropy-data/entropydata-dbt-demo-builder"
+tags:
+  - consumer-aligned
+  - dbt

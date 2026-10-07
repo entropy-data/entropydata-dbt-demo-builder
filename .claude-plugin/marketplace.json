@@ -1,0 +1,28 @@
+{
+  "name": "entropydata-dbt-demo-builder",
+  "owner": {
+    "name": "Entropy Data",
+    "email": "hello@entropy-data.com"
+  },
+  "description": "Demo data product builder for the Stackable + Entropy Data demo (Trino, Airflow, dbt).",
+  "plugins": [
+    {
+      "name": "entropydata-dbt-demo-builder",
+      "source": {
+        "source": "github",
+        "repo": "entropy-data/entropydata-dbt-demo-builder"
+      },
+      "description": "Demo-grade builder for Trino dbt data products on Stackable with Entropy Data.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Entropy Data",
+        "url": "https://entropy-data.com"
+      },
+      "homepage": "https://github.com/entropy-data/entropydata-dbt-demo-builder",
+      "repository": "https://github.com/entropy-data/entropydata-dbt-demo-builder",
+      "license": "MIT",
+      "keywords": ["dbt", "data-product", "data-contract", "entropy-data", "trino", "stackable", "airflow", "demo"],
+      "category": "Data"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "entropydata-dbt-demo-builder",
+  "owner": {
+    "name": "Entropy Data",
+    "email": "hello@entropy-data.com"
+  },
+  "metadata": {
+    "description": "Demo data product builder for the Stackable + Entropy Data demo (Trino, Airflow, dbt).",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "entropydata-dbt-demo-builder",
+      "description": "Demo-grade builder for Trino dbt data products on Stackable with Entropy Data.",
+      "version": "0.1.0",
+      "source": "."
+    }
+  ]
+}

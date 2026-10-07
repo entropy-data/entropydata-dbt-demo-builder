@@ -1,0 +1,9 @@
+version: 2
+
+# 1:1 cleaned views over input-port sources. One stg_<table>.sql per source table.
+# models:
+#   - name: stg_orders
+#     description: Cleaned orders.
+#     columns:
+#       - name: order_id
+#         data_tests: [unique, not_null]

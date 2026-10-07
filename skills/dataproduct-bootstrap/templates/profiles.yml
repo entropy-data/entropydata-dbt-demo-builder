@@ -1,0 +1,15 @@
+{{DBT_PROJECT_NAME}}:
+  target: dev
+  outputs:
+    dev:
+      type: trino
+      method: ldap
+      host: "{{ env_var('TRINO_HOST', 'trino-coordinator') }}"
+      port: 8443
+      user: "{{ env_var('TRINO_USER', 'admin') }}"
+      password: "{{ env_var('TRINO_PASSWORD') }}"
+      catalog: hive-iceberg
+      schema: {{SCHEMA}}
+      http_scheme: https
+      cert: "{{ env_var('TRINO_CA_BUNDLE', 'true') }}"
+      threads: 4

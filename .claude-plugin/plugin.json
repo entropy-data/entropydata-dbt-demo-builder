@@ -1,0 +1,13 @@
+{
+  "name": "entropydata-dbt-demo-builder",
+  "version": "0.1.0",
+  "description": "Demo-grade builder for the Stackable + Entropy Data demo: scaffold a Trino dbt data product folder, implement it from its data contract, and run it through Airflow (dbt-ol build, data contract tests, OpenLineage) or locally.",
+  "author": {
+    "name": "Entropy Data",
+    "url": "https://entropy-data.com"
+  },
+  "homepage": "https://github.com/entropy-data/entropydata-dbt-demo-builder",
+  "repository": "https://github.com/entropy-data/entropydata-dbt-demo-builder",
+  "license": "MIT",
+  "keywords": ["dbt", "data-product", "data-contract", "entropy-data", "trino", "stackable", "airflow", "demo"]
+}

@@ -1,0 +1,19 @@
+name: '{{DBT_PROJECT_NAME}}'
+version: '1.0.0'
+config-version: 2
+
+profile: '{{DBT_PROJECT_NAME}}'
+
+model-paths: ["models"]
+target-path: "target"
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  {{DBT_PROJECT_NAME}}:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

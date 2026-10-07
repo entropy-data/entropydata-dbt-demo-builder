@@ -1,0 +1,28 @@
+{
+  "name": "entropydata-dbt-demo-builder",
+  "version": "0.1.0",
+  "description": "Demo-grade builder for Trino dbt data products on Stackable with Entropy Data.",
+  "author": {
+    "name": "Entropy Data",
+    "url": "https://entropy-data.com"
+  },
+  "homepage": "https://github.com/entropy-data/entropydata-dbt-demo-builder",
+  "repository": "https://github.com/entropy-data/entropydata-dbt-demo-builder",
+  "license": "MIT",
+  "keywords": ["dbt", "data-product", "data-contract", "entropy-data", "trino", "stackable", "airflow", "demo"],
+  "interface": {
+    "displayName": "Entropy Data dbt Demo Builder",
+    "shortDescription": "Demo builder for Trino dbt data products on Stackable.",
+    "longDescription": "Streamlined demo plugin for the Stackable + Entropy Data demo. Scaffolds a data product folder (ODPS, output-port ODCS, Trino dbt project) under dags/dataproducts/<id>/, generates the output-port models from the ODCS contract, and runs it through the generic Airflow DAG (publish to Entropy Data, dbt-ol build with OpenLineage, datacontract test) or locally. Three skills: dataproduct-bootstrap, dataproduct-implement, and datacontract-test.",
+    "developerName": "Entropy Data",
+    "category": "Data",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://entropy-data.com",
+    "defaultPrompt": [
+      "Bootstrap a new data product that reads from tpch-analytics.",
+      "Implement the data product http://<node-ip>:30808/myorga/dataproducts/<id>."
+    ]
+  },
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
+}

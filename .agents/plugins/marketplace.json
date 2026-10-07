@@ -1,0 +1,21 @@
+{
+  "name": "entropydata-dbt-demo-builder",
+  "interface": {
+    "displayName": "Entropy Data dbt Demo Builder",
+    "shortDescription": "Demo plugin for Trino dbt data products on the Stackable + Entropy Data demo."
+  },
+  "plugins": [
+    {
+      "name": "entropydata-dbt-demo-builder",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/entropy-data/entropydata-dbt-demo-builder.git"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Data"
+    }
+  ]
+}
