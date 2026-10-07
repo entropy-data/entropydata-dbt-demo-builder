@@ -1,6 +1,6 @@
 ---
 name: dataproduct-bootstrap
-description: Bootstrap a brand-new data product folder in the Stackable + Entropy Data demo repo in one go: `dags/dataproducts/<id>/` with ODPS, output-port ODCS, and a Trino dbt project (dbt_project.yml, profiles.yml, staging + marts model layout, README). The generic Airflow DAG picks the folder up after a push to Forgejo. Trigger when the user asks to start a new data product, scaffold a new dbt project in the demo, or "create a data product from scratch."
+description: Bootstrap a brand-new data product folder in the Stackable + Entropy Data demo repo in one go: `dags/dataproducts/<id>/` with ODPS, output-port ODCS, and a Trino dbt project (dbt_project.yml, profiles.yml, sources + marts model layout, README). If the data product already exists in Entropy Data (designed in the web UI), starts from its ODPS and output-port ODCS. The generic Airflow DAG picks the folder up after a push to Forgejo. Trigger when the user asks to start a new data product, scaffold a new dbt project in the demo, or "create a data product from scratch."
 ---
 
 # Bootstrap a new data product folder (demo)
@@ -22,14 +22,12 @@ dags/dataproducts/<data-product-id>/
 ├── README.md
 ├── .gitignore
 └── models/
-    ├── staging/
-    │   ├── _sources.yml
-    │   └── _staging.yml
+    ├── _sources.yml
     └── marts/
         └── _marts.yml
 ```
 
-The existing data products in the demo are good references: `dags/dataproducts/tpch-source/` (source-aligned, ODPS + ODCS only, no dbt), `dags/dataproducts/tpch-core/` (dbt project with the cleaned staging views `stg_*` in `"hive-iceberg".demo`, input port from `tpch-source`) and six mart data products such as `dags/dataproducts/tpch-order-summary/` (dbt project with one mart table, input port from `tpch-core`, one output port and one data contract).
+The existing data products in the demo are good references: `dags/dataproducts/tpch-source/` (source-aligned, ODPS + ODCS only, no dbt), `dags/dataproducts/tpch-core/` (dbt project with the cleaned staging views `stg_*` in `"hive-iceberg".demo`, input port from `tpch-source`) and six mart data products such as `dags/dataproducts/tpch-order-summary/` (dbt project with one mart table that reads `tpch-core` via `source('tpch_core', ...)` directly, no staging layer of its own; one output port and one data contract).
 
 ## How to run this skill
 
@@ -41,7 +39,7 @@ Before running Step 1, print this plan to the user verbatim:
 
 > Running **dataproduct-bootstrap**. I'll:
 > 1. Pre-check: confirm this is a checkout of the demo repo and the Entropy Data connection works.
-> 2. Ask you for parameters in one batched question (id, name, purpose, team, input data product, schema, table).
+> 2. If the data product already exists in Entropy Data, start from its ODPS and data contract; otherwise ask you for parameters in one batched question (id, name, purpose, team, input data product, schema, table).
 > 3. Scaffold `dags/dataproducts/<id>/`: ODPS, output-port ODCS, dbt_project.yml, profiles.yml, model layout, README, .gitignore.
 > 4. Summarize what was scaffolded and how to get it running in Airflow.
 
@@ -56,7 +54,16 @@ Always use the `entropy-data` CLI for any connection to Entropy Data. Do not use
 
 ### Step 2: Gather parameters in one batched question
 
-Run `entropy-data teams list` first so you can offer the existing team ids. Then ask the user for these in a single prompt. Do not generate any files until you have all of them.
+If the user already named an id (or `dataproduct-implement` sent you here), run `entropy-data dataproducts get <id> -o yaml` first. If it succeeds, the data product was designed in Entropy Data: fetch its first output port's contract with `entropy-data datacontracts get <contractId> -o yaml` and derive every parameter you can from the two documents (`EXISTING = true`):
+
+- `DATA_PRODUCT_NAME`, `PURPOSE` (`description.purpose`), `TEAM_NAME` from the ODPS
+- `OUTPUT_PORT_NAME`, `CONTRACT_ID` from `outputPorts[0]`
+- `TABLE` from the contract's `schema[0].physicalName // name`
+- `SCHEMA` from the contract's `servers[].schema` (the `trino` server)
+
+Only ask for what is still missing (typically `INPUT_DATA_PRODUCT_ID`, sometimes `SCHEMA`).
+
+Otherwise run `entropy-data teams list` so you can offer the existing team ids. Then ask the user for these in a single prompt. Do not generate any files until you have all of them.
 
 | Parameter | Description | Example |
 |---|---|---|
@@ -75,8 +82,8 @@ Derive:
 - `DATA_PRODUCT_DIR` = `dags/dataproducts/<DATA_PRODUCT_ID>`
 - `DBT_PROJECT_NAME` = `DATA_PRODUCT_ID` with `-` replaced by `_` (dbt project and profile name)
 - `DAG_ID` = `dataproduct_<DBT_PROJECT_NAME>`
-- `OUTPUT_PORT_NAME` = `<TABLE>` with `_` replaced by `-` (one output port per data product, like the TPC-H marts)
-- `CONTRACT_ID` = `<DATA_PRODUCT_ID>` (the output port's data contract shares the data product's id)
+- `OUTPUT_PORT_NAME` = `<TABLE>` with `_` replaced by `-` (one output port per data product, like the TPC-H marts), unless taken from Entropy Data
+- `CONTRACT_ID` = `<DATA_PRODUCT_ID>` (the output port's data contract shares the data product's id), unless taken from Entropy Data
 - `CONTRACT_FILE` = `<CONTRACT_ID>.odcs.yaml`
 - `ODPS_FILE` = `<DATA_PRODUCT_ID>.odps.yaml`
 - `INPUT_SOURCE_NAME` = `INPUT_DATA_PRODUCT_ID` with `-` replaced by `_`
@@ -94,9 +101,15 @@ Templates live under `${PLUGIN_ROOT}/skills/dataproduct-bootstrap/templates/`. C
 | `profiles.yml` | `profiles.yml` |
 | `README.md` | `README.md` |
 | `.gitignore` | `.gitignore` |
-| `models/staging/_sources.yml` | `models/staging/_sources.yml` |
-| `models/staging/_staging.yml` | `models/staging/_staging.yml` |
+| `models/_sources.yml` | `models/_sources.yml` |
 | `models/marts/_marts.yml` | `models/marts/_marts.yml` |
+
+If `EXISTING = true`, do not seed the ODPS and ODCS from the templates. Write the fetched Entropy Data versions to `<ODPS_FILE>` and `<CONTRACT_FILE>` instead and only add what is missing:
+
+- ODPS: the `dataProductBuilder` entry in `customProperties`, the `inputPorts` entry for `INPUT_DATA_PRODUCT_ID` (`name`, `version`, `contractId`), an output port `description` (`Table "hive-iceberg".<SCHEMA>.<TABLE>, built by dbt.`) and the tags `consumer-aligned`, `dbt`.
+- ODCS: a `servers` entry `trino` (as in the template) if there is none.
+
+Keep every field authored in Entropy Data as it is. After writing any ODCS file, run `datacontract lint <file>` yourself (the lint hook only fires for Edit/Write tool calls of an installed plugin) and fix lint errors. If `datacontract` is not on PATH yet, lint after dataproduct-implement Step 5 creates the venv.
 
 ### Step 4: Final report
 
@@ -107,11 +120,11 @@ End with this two-part recap. Use the `Status` enum: `created`, `already present
 | Artifact | Status | Details |
 |---|---|---|
 | Folder | … | `<DATA_PRODUCT_DIR>` |
-| ODPS | … | `<ODPS_FILE>`, team `<TEAM_NAME>`, input port `<INPUT_DATA_PRODUCT_ID>` |
-| Output-port contract | … | `<CONTRACT_FILE>` (schema seeded with `id` + `updated_at`, server `trino`) |
+| ODPS | … | `<ODPS_FILE>` (from Entropy Data / template), team `<TEAM_NAME>`, input port `<INPUT_DATA_PRODUCT_ID>` |
+| Output-port contract | … | `<CONTRACT_FILE>` (from Entropy Data, or seeded with `id` + `updated_at`; server `trino`) |
 | `dbt_project.yml` | … | profile = `<DBT_PROJECT_NAME>` |
 | `profiles.yml` | … | Trino, `hive-iceberg.<SCHEMA>`, credentials from env vars |
-| Model layout | … | `models/{staging,marts}/` |
+| Model layout | … | `models/_sources.yml`, `models/marts/` |
 | `README.md` | … | written |
 | `.gitignore` | … | written |
 

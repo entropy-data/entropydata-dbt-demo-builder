@@ -11,7 +11,7 @@ When a user request matches a skill's trigger, **read the corresponding `SKILL.m
 | When the user asks about… | Follow this skill |
 |---|---|
 | Scaffolding a brand-new data product folder `dags/dataproducts/<id>/` in the demo repo | `skills/dataproduct-bootstrap/SKILL.md` |
-| Implementing a data product from an Entropy Data URL or id, then running it via the Airflow DAG or locally (publish, `dbt-ol build`, data contract tests) | `skills/dataproduct-implement/SKILL.md` |
+| Implementing a data product from an Entropy Data URL or id, then running it via the Airflow DAG or locally (`dbt-ol build`, data contract tests, publish) | `skills/dataproduct-implement/SKILL.md` |
 | Testing existing data contracts against the live Trino server | `skills/datacontract-test/SKILL.md` |
 
 The trigger phrasing above is illustrative; each `SKILL.md`'s frontmatter `description` is authoritative.
@@ -22,8 +22,8 @@ Skill files reference `${PLUGIN_ROOT}` to locate `templates/`. On Claude Code it
 
 ## CLIs the skills shell out to
 
-- **`entropy-data`**: fetch and publish data products / contracts, list teams.
-- **`dbt`** (`dbt-trino` adapter): `dbt parse` and local runs.
+- **`entropy-data`**: fetch and publish data products / contracts, request and approve access, list teams.
+- **`dbt`** (`dbt-trino` adapter): `dbt parse` and local runs, from a `.venv` inside the data product folder.
 - **`dbt-ol`** (`openlineage-dbt`): runs dbt with OpenLineage so lineage ships to Entropy Data.
 - **`datacontract`** (`datacontract-cli[trino]`): runs contract tests against Trino.
 

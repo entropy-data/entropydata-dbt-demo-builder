@@ -11,7 +11,7 @@ When a user request matches a skill's trigger, **read the corresponding `SKILL.m
 | When the user asks about… | Follow this skill |
 |---|---|
 | Scaffolding a brand-new data product folder `dags/dataproducts/<id>/` in the demo repo | `skills/dataproduct-bootstrap/SKILL.md` |
-| Implementing a data product from an Entropy Data URL or id: generate dbt models from the ODCS contract, then run it via the Airflow DAG or locally (publish, `dbt-ol build`, data contract tests) | `skills/dataproduct-implement/SKILL.md` |
+| Implementing a data product from an Entropy Data URL or id: merge ODPS/ODCS, add input ports and access requests, implement dbt models from the ODCS contract, then run it via the Airflow DAG or locally (`dbt-ol build`, data contract tests, publish) | `skills/dataproduct-implement/SKILL.md` |
 | Testing existing data contracts against the live Trino server (no edits, just run `datacontract test`) | `skills/datacontract-test/SKILL.md` |
 
 The trigger phrasing above is illustrative; each `SKILL.md`'s frontmatter `description` is authoritative.
@@ -27,16 +27,16 @@ The skill files reference `${PLUGIN_ROOT}` to locate `templates/`. On Claude Cod
 - The generic DAG factory `dags/dataproduct_dags.py` creates one DAG per folder, `dataproduct_<id with - replaced by _>`, which publishes the ODPS and ODCS files to Entropy Data, runs `dbt-ol build --profiles-dir .` with OpenLineage to Entropy Data, and runs `datacontract test --server trino --publish` per output-port contract.
 - Trino: `trino-coordinator:8443`, HTTPS, basic auth (user `admin`, password from env). Catalogs `tpch` (schema `tiny`, raw source data) and `hive-iceberg` (dbt output schemas).
 - Entropy Data CE: `http://entropy-data:8080` in-cluster, `http://<node-ip>:30808` from outside, organization `myorga`, Keycloak users `demo-admin` / `demo-user`.
-- Reference data products: `tpch-source` (source-aligned, ODPS + ODCS only), `tpch-core` (dbt staging views in `"hive-iceberg".demo`) and six marts such as `tpch-order-summary` (one dbt mart table, one output port and data contract each, input port from `tpch-core`).
+- Reference data products: `tpch-source` (source-aligned, ODPS + ODCS only), `tpch-core` (dbt staging views in `"hive-iceberg".demo`) and six marts such as `tpch-order-summary` (one dbt mart table reading `tpch-core` via `source(...)` directly, no staging layer of its own; one output port and data contract each, input port from `tpch-core`).
 
 ## CLIs the skills shell out to
 
-- **`entropy-data`** (PyPI: `entropy-data`; install with `uv tool install entropy-data`): used to fetch data products and contracts, publish updates, list teams. Connect with `entropy-data connection add default --api-key <key> --host http://<node-ip>:30808`.
-- **`dbt`** (`dbt-trino` adapter): used by the implement skill for `dbt parse` and local runs.
+- **`entropy-data`** (PyPI: `entropy-data`; install with `uv tool install entropy-data`): used to fetch data products and contracts, publish updates, request and approve access, list teams. Connect with `entropy-data connection add default --api-key <key> --host http://<node-ip>:30808`. `ENTROPY_DATA_HOST` / `ENTROPY_DATA_API_KEY` override the saved connection.
+- **`dbt`** (`dbt-trino` adapter): used by the implement skill for `dbt parse` and local runs. The implement skill installs dbt, dbt-ol and datacontract into a `.venv` inside the data product folder (`uv venv .venv && uv pip install --python .venv dbt-trino openlineage-dbt "datacontract-cli[trino]"`) and puts `.venv/bin` first on PATH.
 - **`dbt-ol`** (PyPI: `openlineage-dbt`): runs dbt with OpenLineage so lineage ships to Entropy Data. Used by the Airflow DAG and by local runs.
 - **`datacontract`** (PyPI: `datacontract-cli[trino]`): runs contract tests against the Trino server defined in the ODCS file.
 
-If any CLI is missing, surface the install line and stop. Do not try to install on the user's behalf without confirmation.
+If any CLI is missing, surface the install line and stop. Do not try to install on the user's behalf without confirmation (the per-folder `.venv` the implement skill creates is the exception).
 
 ## Conventions when running skills
 

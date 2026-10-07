@@ -37,7 +37,7 @@ Then proceed.
 
 ### Step 0: Pre-checks
 
-- Confirm `datacontract --version` is on PATH. If not, stop and tell the user to install it: `uv tool install 'datacontract-cli[trino]'`.
+- Confirm `datacontract --version` is on PATH. Prefer the data product's venv if it exists (`export PATH="$PWD/dags/dataproducts/<id>/.venv/bin:$PATH"`, created by dataproduct-implement). If neither is available, stop and tell the user to install it: `uv tool install 'datacontract-cli[trino]'`.
 - Confirm at least one `*.odcs.yaml` exists under `dags/dataproducts/*/`. If not, stop and tell the user there is nothing to test.
 - Confirm Trino credentials for the Data Contract CLI are in the environment. The CLI reads `DATACONTRACT_TRINO_*` env vars, **not** `profiles.yml`:
 
@@ -47,7 +47,7 @@ Then proceed.
   ```
 
   If any are unset, surface the list and ask whether to continue (the CLI will fail fast on that server) or stop. Do not try to source credentials yourself.
-- Confirm `trino-coordinator` resolves and port 8443 is reachable. Outside the cluster that needs `kubectl port-forward svc/trino-coordinator 8443:8443` plus a `127.0.0.1 trino-coordinator` line in `/etc/hosts`. If not reachable, say so and suggest re-running the Airflow DAG instead, which tests from inside the cluster.
+- Confirm Trino is reachable on port 8443. Outside the cluster that needs `kubectl port-forward svc/trino-coordinator 8443:8443` plus `DATACONTRACT_TRINO_HOST=localhost`, which overrides the contract's server host (if the TLS hostname check fails for `localhost`, add `127.0.0.1 trino-coordinator` to `/etc/hosts` instead). If the Trino certificate is not in the system trust store, set `REQUESTS_CA_BUNDLE` to the CA file. If not reachable, say so and suggest re-running the Airflow DAG instead, which tests from inside the cluster.
 
 ### Step 1: Select contracts
 
@@ -75,7 +75,7 @@ datacontract test <path-to-contract>.odcs.yaml --server trino --logs
 
 - `--logs` ensures per-rule failure detail is in stdout; without it the CLI only prints a summary.
 - If the user asks for a persisted report, add `--output ./test-results/<contract>.xml --output-format junit` (outside the data product folder).
-- If the user asks to publish results back to Entropy Data (what the Airflow DAG does), add `--publish <API_HOST>/api/test-results` with `ENTROPY_DATA_API_KEY` exported inline from `entropy-data connection get -o json | jq -r .apiKey`, and `API_HOST` from `.host` of the same command. Do not publish by default; it writes server-side state.
+- If the user asks to publish results back to Entropy Data (what the Airflow DAG does), add `--publish $ENTROPY_DATA_HOST/api/test-results` with `ENTROPY_DATA_HOST` and `ENTROPY_DATA_API_KEY` set inline (the CLI only sends the key to that host). Use the env vars if already set, otherwise read the saved connection: `entropy-data -o json connection get | jq -r .host` and `entropy-data -o json connection get --show-api-key | jq -r .api_key`. Do not publish by default; it writes server-side state.
 - Capture stdout and exit code per contract. Non-zero exit means at least one rule failed.
 
 Run sequentially, not in parallel: Trino is the bottleneck and parallel runs muddy the log output.

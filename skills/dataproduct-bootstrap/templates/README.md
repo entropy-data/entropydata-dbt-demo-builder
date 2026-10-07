@@ -10,7 +10,7 @@ Data product `{{DATA_PRODUCT_ID}}` on the Stackable demo: a dbt project on Trino
 dbt_project.yml
 profiles.yml                     # Trino connection, credentials come from env vars
 models/
-├── staging/                     # input-port sources + 1:1 cleaned views
+├── _sources.yml                 # input ports as dbt sources, read directly by the marts
 └── marts/                       # output-port tables, one per table in the contract
 ```
 
@@ -24,19 +24,31 @@ Commit and push to the in-cluster Forgejo repo (`http://<node-ip>:30000/stackabl
 
 ## Run locally
 
-Only needed for debugging. Trino must be reachable as `trino-coordinator:8443`, e.g. via `kubectl port-forward svc/trino-coordinator 8443:8443` plus a `127.0.0.1 trino-coordinator` entry in `/etc/hosts`.
+Only needed for debugging; the steps mirror the DAG. Forward Trino with `kubectl port-forward svc/trino-coordinator 8443:8443` and point the tools at it with `TRINO_HOST` (dbt) and `DATACONTRACT_TRINO_HOST` (Data Contract CLI). If the TLS hostname check fails for `localhost`, add `127.0.0.1 trino-coordinator` to `/etc/hosts` and leave both unset.
 
 ```bash
-uv venv
-source .venv/bin/activate
-uv pip install dbt-core dbt-trino openlineage-dbt 'datacontract-cli[trino]' entropy-data
+uv venv .venv
+uv pip install --python .venv dbt-trino openlineage-dbt 'datacontract-cli[trino]'
+export PATH="$PWD/.venv/bin:$PATH"   # dbt-ol calls the first dbt on PATH
 
+export TRINO_HOST=localhost DATACONTRACT_TRINO_HOST=localhost
 export TRINO_PASSWORD=<trino-admin-password>
 export TRINO_CA_BUNDLE=<path-to-trino-ca.crt>   # or leave unset to use the system trust store
+export ENTROPY_DATA_HOST=http://<node-ip>:30808
+export ENTROPY_DATA_API_KEY=<api-key>
 
-dbt build --profiles-dir .
+OPENLINEAGE__TRANSPORT__TYPE=http \
+OPENLINEAGE__TRANSPORT__URL=$ENTROPY_DATA_HOST \
+OPENLINEAGE__TRANSPORT__ENDPOINT="api/v1/lineage?dataProductId={{DATA_PRODUCT_ID}}" \
+OPENLINEAGE__TRANSPORT__AUTH__TYPE=api_key \
+OPENLINEAGE__TRANSPORT__AUTH__APIKEY=$ENTROPY_DATA_API_KEY \
+  dbt-ol build --profiles-dir .
+
 DATACONTRACT_TRINO_USERNAME=admin DATACONTRACT_TRINO_PASSWORD=$TRINO_PASSWORD \
-  datacontract test {{CONTRACT_FILE}} --server trino --logs
+REQUESTS_CA_BUNDLE=${TRINO_CA_BUNDLE:-} \
+  datacontract test {{CONTRACT_FILE}} --server trino --logs --publish $ENTROPY_DATA_HOST/api/test-results
 ```
+
+`.venv/`, `target/` and `logs/` are gitignored.
 
 No secrets in this folder: `profiles.yml` reads every credential from env vars.

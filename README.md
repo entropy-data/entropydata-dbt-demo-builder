@@ -21,12 +21,12 @@ Push the folder to the in-cluster Forgejo repo (`http://<node-ip>:30000/stackabl
 2. runs `dbt-ol build` against Trino and ships OpenLineage to Entropy Data,
 3. runs `datacontract test --server trino --publish` for each output-port contract.
 
-The demo ships reference data products: `tpch-source` (raw TPC-H tables in `tpch.tiny`, ODPS + ODCS only), `tpch-core` (dbt staging views `stg_*` in `"hive-iceberg".demo`) and six marts such as `tpch-order-summary` (one dbt mart table, one output port and data contract each). New data products typically read from `tpch-core`. Airflow chains the DAGs along the ODPS input ports, so a new data product runs right after its upstream data product.
+The demo ships reference data products: `tpch-source` (raw TPC-H tables in `tpch.tiny`, ODPS + ODCS only), `tpch-core` (dbt staging views `stg_*` in `"hive-iceberg".demo`) and six marts such as `tpch-order-summary` (one dbt mart table that reads `tpch-core` via `source(...)` directly, one output port and data contract each). New data products typically read from `tpch-core`. Airflow chains the DAGs along the ODPS input ports, so a new data product runs right after its upstream data product.
 
 ## Skills
 
-- **[dataproduct-bootstrap](skills/dataproduct-bootstrap/SKILL.md)** scaffolds a new data product folder: ODPS, output-port ODCS, `dbt_project.yml`, `profiles.yml` for Trino, staging + marts model layout, README.
-- **[dataproduct-implement](skills/dataproduct-implement/SKILL.md)** syncs a data product and its contract from Entropy Data, generates dbt models from the ODCS contract, runs `dbt parse`, and then hands the folder to the Airflow DAG (push to Forgejo, trigger the DAG) or runs the same steps locally.
+- **[dataproduct-bootstrap](skills/dataproduct-bootstrap/SKILL.md)** scaffolds a new data product folder: ODPS, output-port ODCS, `dbt_project.yml`, `profiles.yml` for Trino, sources + marts model layout, README. If the data product already exists in Entropy Data, it starts from that ODPS and contract.
+- **[dataproduct-implement](skills/dataproduct-implement/SKILL.md)** merges a data product and its contract with Entropy Data, adds input ports and requests access to them, implements the dbt models the ODCS contract describes, runs `dbt parse`, then hands the folder to the Airflow DAG (push to Forgejo, trigger the DAG) or runs the same steps locally, and publishes the result.
 - **[datacontract-test](skills/datacontract-test/SKILL.md)** runs `datacontract test` against output-port and input-port ODCS files to verify the live Trino data still matches the contract.
 
 ## Install
@@ -81,13 +81,11 @@ cd entropydata-dbt-demo
 
 Ask the agent:
 
-> Bootstrap a new data product that reads from tpch-core.
+> Implement the data product *url or id* with its data contract.
 
-Then, once the folder is in place:
+Typical demo flow: create the data contract and the data product (one output port) in the Entropy Data web UI first. The implement skill bootstraps the folder from them, adds the input ports, implements the models, checks them with `dbt parse`, and gets the data product running: commit and push to Forgejo, then trigger the DAG in Airflow. The data product, its lineage, and its test results show up in Entropy Data. Running locally works too, with a `kubectl port-forward` to Trino and `TRINO_HOST` / `DATACONTRACT_TRINO_HOST` pointing at it.
 
-> Implement the data product *url or id*.
-
-The implement skill generates the models from the contract, checks them with `dbt parse`, and gets the data product running: commit and push to Forgejo, then trigger the DAG in Airflow. The data product, its lineage, and its test results show up in Entropy Data. Running locally works too, with a `kubectl port-forward` to Trino.
+To start from scratch instead, ask: *Bootstrap a new data product that reads from tpch-core.*
 
 ## Trino-only
 
