@@ -21,7 +21,7 @@ Push the folder to the in-cluster Forgejo repo (`http://<node-ip>:30000/stackabl
 2. runs `dbt-ol build` against Trino and ships OpenLineage to Entropy Data,
 3. runs `datacontract test --server trino --publish` for each output-port contract.
 
-The demo ships two reference data products: `tpch-source` (raw TPC-H tables in `tpch.tiny`, ODPS + ODCS only) and `tpch-analytics` (dbt staging views and mart tables in `"hive-iceberg".demo`). New data products typically read from one of their output ports.
+The demo ships reference data products: `tpch-source` (raw TPC-H tables in `tpch.tiny`, ODPS + ODCS only), `tpch-core` (dbt staging views `stg_*` in `"hive-iceberg".demo`) and six marts such as `tpch-order-summary` (one dbt mart table, one output port and data contract each). New data products typically read from `tpch-core`. Airflow chains the DAGs along the ODPS input ports, so a new data product runs right after its upstream data product.
 
 ## Skills
 
@@ -81,7 +81,7 @@ cd entropydata-dbt-demo
 
 Ask the agent:
 
-> Bootstrap a new data product that reads from tpch-analytics.
+> Bootstrap a new data product that reads from tpch-core.
 
 Then, once the folder is in place:
 

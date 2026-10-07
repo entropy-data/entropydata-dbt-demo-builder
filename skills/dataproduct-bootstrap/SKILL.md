@@ -29,7 +29,7 @@ dags/dataproducts/<data-product-id>/
         └── _marts.yml
 ```
 
-The existing data products in the demo are good references: `dags/dataproducts/tpch-source/` (source-aligned, ODPS + ODCS only, no dbt) and `dags/dataproducts/tpch-analytics/` (dbt project with staging views and mart tables in `"hive-iceberg".demo`, input port from `tpch-source`).
+The existing data products in the demo are good references: `dags/dataproducts/tpch-source/` (source-aligned, ODPS + ODCS only, no dbt), `dags/dataproducts/tpch-core/` (dbt project with the cleaned staging views `stg_*` in `"hive-iceberg".demo`, input port from `tpch-source`) and six mart data products such as `dags/dataproducts/tpch-order-summary/` (dbt project with one mart table, input port from `tpch-core`, one output port and one data contract).
 
 ## How to run this skill
 
@@ -64,7 +64,7 @@ Run `entropy-data teams list` first so you can offer the existing team ids. Then
 | `DATA_PRODUCT_NAME` | Human-friendly name | `Customer Orders` |
 | `PURPOSE` | One sentence: why this data product exists | `Order history per customer for customer success.` |
 | `TEAM_NAME` | Owning team id, must exist in Entropy Data | `analytics-engineering` |
-| `INPUT_DATA_PRODUCT_ID` | Upstream data product to read from (default `tpch-analytics`) | `tpch-analytics` or `tpch-source` |
+| `INPUT_DATA_PRODUCT_ID` | Upstream data product to read from (default `tpch-core`) | `tpch-core`, `tpch-source` or a mart such as `tpch-order-summary` |
 | `SCHEMA` | Iceberg schema in the `hive-iceberg` catalog (default: `DBT_PROJECT_NAME`) | `customer_orders` |
 | `TABLE` | First output-port table name | `customer_orders` |
 
@@ -75,12 +75,12 @@ Derive:
 - `DATA_PRODUCT_DIR` = `dags/dataproducts/<DATA_PRODUCT_ID>`
 - `DBT_PROJECT_NAME` = `DATA_PRODUCT_ID` with `-` replaced by `_` (dbt project and profile name)
 - `DAG_ID` = `dataproduct_<DBT_PROJECT_NAME>`
-- `OUTPUT_PORT_NAME` = `trino-marts`
-- `CONTRACT_ID` = `<DATA_PRODUCT_ID>-marts`
+- `OUTPUT_PORT_NAME` = `<TABLE>` with `_` replaced by `-` (one output port per data product, like the TPC-H marts)
+- `CONTRACT_ID` = `<DATA_PRODUCT_ID>` (the output port's data contract shares the data product's id)
 - `CONTRACT_FILE` = `<CONTRACT_ID>.odcs.yaml`
 - `ODPS_FILE` = `<DATA_PRODUCT_ID>.odps.yaml`
 - `INPUT_SOURCE_NAME` = `INPUT_DATA_PRODUCT_ID` with `-` replaced by `_`
-- `INPUT_CONTRACT_ID`, `INPUT_CATALOG`, `INPUT_SCHEMA` from the upstream data product: read `dags/dataproducts/<INPUT_DATA_PRODUCT_ID>/<INPUT_DATA_PRODUCT_ID>.odps.yaml` → first output port's `contractId`, then that contract's `servers[0].catalog` / `servers[0].schema` (`tpch-source` → `tpch-source`, `tpch` / `tiny`; `tpch-analytics` → `tpch-analytics-marts`, `hive-iceberg` / `demo`). If the upstream folder is not in the repo, use `entropy-data dataproducts get <id> -o yaml` and `entropy-data datacontracts get <contract-id> -o yaml` instead.
+- `INPUT_CONTRACT_ID`, `INPUT_CATALOG`, `INPUT_SCHEMA` from the upstream data product: read `dags/dataproducts/<INPUT_DATA_PRODUCT_ID>/<INPUT_DATA_PRODUCT_ID>.odps.yaml` → first output port's `contractId`, then that contract's `servers[0].catalog` / `servers[0].schema` (`tpch-source` → `tpch-source`, `tpch` / `tiny`; `tpch-core` → `tpch-core`, `hive-iceberg` / `demo`). If the upstream folder is not in the repo, use `entropy-data dataproducts get <id> -o yaml` and `entropy-data datacontracts get <contract-id> -o yaml` instead.
 
 ### Step 3: Scaffold the folder
 

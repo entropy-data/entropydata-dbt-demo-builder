@@ -117,7 +117,7 @@ For each output port:
 
 1. **Declare each input port as a dbt source.** For every entry in `DATA_PRODUCT.inputPorts`:
    1. Load the upstream contract: `dags/dataproducts/<input-port-name>/<contract-id>.odcs.yaml` if it is in the repo, else `entropy-data datacontracts get <contract-id> -o yaml`.
-   2. Take `servers[0].catalog` and `servers[0].schema` (e.g. `tpch` / `tiny` for `tpch-source`, `hive-iceberg` / `demo` for `tpch-analytics-marts`).
+   2. Take `servers[0].catalog` and `servers[0].schema` (e.g. `tpch` / `tiny` for `tpch-source`, `hive-iceberg` / `demo` for `tpch-core` and the marts).
    3. Write or complete the source in `<DATA_PRODUCT_DIR>/models/staging/_sources.yml`:
 
       ```yaml
@@ -137,13 +137,13 @@ For each output port:
                   description: <from contract>
       ```
 
-   Do not copy upstream contracts into the folder: the DAG publishes every ODCS file in the folder and would overwrite the upstream owner's contract. Surface diffs and ask before overwriting an existing `_sources.yml` entry. `dags/dataproducts/tpch-analytics/models/staging/_sources.yml` is a working example.
+   Do not copy upstream contracts into the folder: the DAG publishes every ODCS file in the folder and would overwrite the upstream owner's contract. Surface diffs and ask before overwriting an existing `_sources.yml` entry. `dags/dataproducts/tpch-core/models/staging/_sources.yml` (reads `tpch-source`) and `dags/dataproducts/tpch-order-summary/models/_sources.yml` (reads `tpch-core`) are working examples.
 
 2. **Match input columns to output columns** by name (comparing against both the input property's `name` and its `physicalName`), or by an obvious synonym only if the input contract's description makes it explicit. For each output column, if exactly one input has a matching column, project `cast(<input_col> as <trino_type>) as <OUT_COL>`. Otherwise leave `cast(null as <trino_type>) as <OUT_COL>` with a `-- TODO:` comment.
 
 3. **Write the SQL body.**
    - **Single input table, columns match 1:1** → replace the TODO `from` with `from {{ source('<source-name>', '<table>') }}`.
-   - **Multiple input tables** → leave the join logic as an inline TODO listing each candidate `{{ source(...) }}` and the join keys. If the user wants the joins written, add `stg_<table>.sql` views under `models/staging/` (see `tpch-analytics` for the pattern) and join them in the mart.
+   - **Multiple input tables** → leave the join logic as an inline TODO listing each candidate `{{ source(...) }}` and the join keys. If the user wants the joins written, add `stg_<table>.sql` views under `models/staging/` (see `tpch-core` for the pattern) and join them in the mart.
    - **Derived / aggregated columns** → leave as `cast(null as <trino_type>) as <col>` with a `-- TODO: compute <description>` comment.
 
 ### Step 5: `dbt parse`

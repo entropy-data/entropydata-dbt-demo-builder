@@ -19,7 +19,7 @@
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://entropy-data.com",
     "defaultPrompt": [
-      "Bootstrap a new data product that reads from tpch-analytics.",
+      "Bootstrap a new data product that reads from tpch-core.",
       "Implement the data product http://<node-ip>:30808/myorga/dataproducts/<id>."
     ]
   },

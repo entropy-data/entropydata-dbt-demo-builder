@@ -27,7 +27,7 @@ The skill files reference `${PLUGIN_ROOT}` to locate `templates/`. On Claude Cod
 - The generic DAG factory `dags/dataproduct_dags.py` creates one DAG per folder, `dataproduct_<id with - replaced by _>`, which publishes the ODPS and ODCS files to Entropy Data, runs `dbt-ol build --profiles-dir .` with OpenLineage to Entropy Data, and runs `datacontract test --server trino --publish` per output-port contract.
 - Trino: `trino-coordinator:8443`, HTTPS, basic auth (user `admin`, password from env). Catalogs `tpch` (schema `tiny`, raw source data) and `hive-iceberg` (dbt output schemas).
 - Entropy Data CE: `http://entropy-data:8080` in-cluster, `http://<node-ip>:30808` from outside, organization `myorga`, Keycloak users `demo-admin` / `demo-user`.
-- Reference data products: `tpch-source` (source-aligned, ODPS + ODCS only) and `tpch-analytics` (dbt staging views + mart tables in `"hive-iceberg".demo`).
+- Reference data products: `tpch-source` (source-aligned, ODPS + ODCS only), `tpch-core` (dbt staging views in `"hive-iceberg".demo`) and six marts such as `tpch-order-summary` (one dbt mart table, one output port and data contract each, input port from `tpch-core`).
 
 ## CLIs the skills shell out to
 
