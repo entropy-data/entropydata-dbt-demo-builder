@@ -64,6 +64,20 @@ Make sure the top-level `customProperties` of the local ODPS contains `property:
 
 For each selected output port, read `<DATA_PRODUCT_DIR>/<contract-id>.odcs.yaml` and run `entropy-data datacontracts get <contract-id> -o yaml`. Same merge rule as Step 1: Entropy Data wins for the human-authored fields (`schema` with its properties and descriptions, `description`, `team`, `status`); the folder only adds what Entropy Data lacks (e.g. the `trino` server). Write the merged result to the local file. Remember it as `CONTRACT`.
 
+**Output port custom properties.** With the contract's schema and first table known, make sure every implemented output port in the local ODPS has these `customProperties` (add what is missing, keep other entries):
+
+```yaml
+customProperties:
+  - property: displayName            # without it, Entropy Data shows "Deleted Output Port"
+    value: <data product name>
+  - property: openInLinks            # "Open In" menu entry for consumers with access
+    value:
+      - name: Superset (SQL Lab)
+        url: ${SUPERSET_URL}/sqllab/?dbid=1&name=<url-encoded display name>&sql=<url-encoded SELECT * FROM "hive-iceberg".<schema>.<first table> LIMIT 100>
+```
+
+Keep `${SUPERSET_URL}` literally in the file: the Superset URL depends on the cluster, and the DAG (and Step 7) replace the placeholder when publishing. URL-encode name and SQL with `python3 -c 'import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))' '<text>'`; `dags/dataproducts/tpch-order-summary/tpch-order-summary.odps.yaml` is a working example.
+
 After editing any ODCS file, run `datacontract lint <file>` yourself (the lint hook only fires for Edit/Write tool calls of an installed plugin; use the venv from Step 5 if `datacontract` is not on PATH yet) and fix lint errors.
 
 You need from `CONTRACT`:
@@ -224,8 +238,12 @@ Publish the merged files, contracts first because the data product references th
 
 ```
 entropy-data datacontracts put <contract-id> --file <contract-id>.odcs.yaml   # per output-port contract
-entropy-data dataproducts put <id> --file <id>.odps.yaml
+SUPERSET_URL=${SUPERSET_URL:-$(echo "${ENTROPY_DATA_HOST:-$(entropy-data -o json connection get | jq -r .host)}" | sed -E 's#:[0-9]+/?$#:30888#')}
+sed "s#\${SUPERSET_URL}#${SUPERSET_URL}#g" <id>.odps.yaml > /tmp/<id>.odps.yaml
+entropy-data dataproducts put <id> --file /tmp/<id>.odps.yaml
 ```
+
+The `sed` fills the `${SUPERSET_URL}` placeholder of the Open In links (Superset runs on the same node as Entropy Data, NodePort 30888) without changing the file in the repo.
 
 If the local `dbt-ol build` and every `datacontract test` passed, set `status: active` in the ODPS, publish it again, and say so in the report. On the Airflow path, tell the user to set `status: active` in the ODPS (or ask you to) once the DAG run is green, since the DAG re-publishes the folder's file. **The data product is now visible in Entropy Data with input ports, materialized tables, lineage, and test results.** Tell the user this explicitly; it is the whole point of the demo.
 

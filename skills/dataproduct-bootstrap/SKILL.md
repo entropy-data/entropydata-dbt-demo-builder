@@ -85,13 +85,14 @@ Derive:
 - `OUTPUT_PORT_NAME` = `<TABLE>` with `_` replaced by `-` (one output port per data product, like the TPC-H marts), unless taken from Entropy Data
 - `CONTRACT_ID` = `<DATA_PRODUCT_ID>` (the output port's data contract shares the data product's id), unless taken from Entropy Data
 - `CONTRACT_FILE` = `<CONTRACT_ID>.odcs.yaml`
+- `DATA_PRODUCT_NAME_URLENCODED` = `DATA_PRODUCT_NAME` URL-encoded (`Customer%20Orders`), for the Superset Open In link in the ODPS
 - `ODPS_FILE` = `<DATA_PRODUCT_ID>.odps.yaml`
 - `INPUT_SOURCE_NAME` = `INPUT_DATA_PRODUCT_ID` with `-` replaced by `_`
 - `INPUT_CONTRACT_ID`, `INPUT_CATALOG`, `INPUT_SCHEMA` from the upstream data product: read `dags/dataproducts/<INPUT_DATA_PRODUCT_ID>/<INPUT_DATA_PRODUCT_ID>.odps.yaml` → first output port's `contractId`, then that contract's `servers[0].catalog` / `servers[0].schema` (`tpch-source` → `tpch-source`, `tpch` / `tiny`; `tpch-core` → `tpch-core`, `hive-iceberg` / `demo`). If the upstream folder is not in the repo, use `entropy-data dataproducts get <id> -o yaml` and `entropy-data datacontracts get <contract-id> -o yaml` instead.
 
 ### Step 3: Scaffold the folder
 
-Templates live under `${PLUGIN_ROOT}/skills/dataproduct-bootstrap/templates/`. Copy each one into `DATA_PRODUCT_DIR`, substituting the `{{UPPER_CASE}}` placeholders. Leave dbt Jinja such as `{{ env_var('TRINO_PASSWORD') }}` untouched.
+Templates live under `${PLUGIN_ROOT}/skills/dataproduct-bootstrap/templates/`. Copy each one into `DATA_PRODUCT_DIR`, substituting the `{{UPPER_CASE}}` placeholders. Leave dbt Jinja such as `{{ env_var('TRINO_PASSWORD') }}` and the `${SUPERSET_URL}` placeholder in the ODPS untouched (the DAG fills it in when publishing).
 
 | Template | Destination (under `DATA_PRODUCT_DIR`) |
 |---|---|

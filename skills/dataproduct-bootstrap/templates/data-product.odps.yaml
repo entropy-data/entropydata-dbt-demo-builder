@@ -22,6 +22,12 @@ outputPorts:
       # Display name of the port in Entropy Data (without it, pages show "Deleted Output Port")
       - property: displayName
         value: "{{DATA_PRODUCT_NAME}}"
+      # "Open In" link for consumers; dataproduct-implement fills in name and SQL (URL-encoded).
+      # ${SUPERSET_URL} stays literal: the DAG replaces it with the cluster's Superset URL.
+      - property: openInLinks
+        value:
+          - name: Superset (SQL Lab)
+            url: "${SUPERSET_URL}/sqllab/?dbid=1&name={{DATA_PRODUCT_NAME_URLENCODED}}&sql=SELECT%20*%20FROM%20%22hive-iceberg%22.{{SCHEMA}}.{{TABLE}}%20LIMIT%20100"
 customProperties:
   - property: "dataProductBuilder"
     value: "https://github.com/entropy-data/entropydata-dbt-demo-builder"
